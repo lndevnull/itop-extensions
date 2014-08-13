@@ -11,12 +11,19 @@
     <class id="DBServer">
       <fields>
         <field id="dbcluster_list" xsi:type="AttributeLinkedSet" _delta="define">
-          <linked_class>lnkDBServerToDBCluster</linked_class>
-          <ext_key_to_me>dbserver_id</ext_key_to_me>
+          <linked_class>lnkDBClusterToSoftwareInstance</linked_class>
+          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
           <count_min>0</count_min>
           <count_max>0</count_max>
           <ext_key_to_remote>dbcluster_id</ext_key_to_remote>
           <duplicates/>
+        </field>
+        <field id="dbschema_list" xsi:type="AttributeLinkedSet" _delta="redefine">
+          <linked_class>DatabaseSchema</linked_class>
+          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
+          <edit_mode>in_place</edit_mode>
+          <count_min>0</count_min>
+          <count_max>0</count_max>
         </field>
       </fields>
       <methods>
@@ -30,8 +37,8 @@
                 {
                         case "impacts":
                         $aRels = array(
-                          "DatabaseSchema" => array("sQuery"=>"SELECT DatabaseSchema AS db WHERE dbserver_id = :this->id", "bPropagate"=>true, "iDistance"=>10),
- 			  "dbcluster" => array("sQuery"=>"SELECT DBCluster AS dbc JOIN lnkDBServerToDBCluster AS l1 ON l1.dbcluster_id= dbc.id WHERE l1.dbserver_id = :this->id", "bPropagate"=>true, "iDistance"=>10),
+                          "DatabaseSchema" => array("sQuery"=>"SELECT DatabaseSchema AS db WHERE softwareinstance_id = :this->id", "bPropagate"=>true, "iDistance"=>5),
+ 			  "DBCluster" => array("sQuery"=>"SELECT DBCluster AS dbc JOIN lnkDBClusterToSoftwareInstance AS l1 ON l1.dbcluster_id= dbc.id WHERE l1.softwareinstance_id = :this->id", "bPropagate"=>true, "iDistance"=>10),
                         );
                         return array_merge($aRels, parent::GetRelationQueries($sRelCode));
                         break;
@@ -61,24 +68,17 @@
     </class>
     <class id="DatabaseSchema" _delta="must_exist">
       <fields>
-        <field id="dbserver_id" xsi:type="AttributeExternalKey" _delta="redefine">
-          <sql>dbserver_id</sql>
-          <target_class>DBServer</target_class>
-          <is_null_allowed>true</is_null_allowed>
-          <on_target_delete>DEL_MANUAL</on_target_delete>
-        </field>
-        <field id="dbserver_name" xsi:type="AttributeExternalField" _delta="redefine">
-          <extkey_attcode>dbserver_id</extkey_attcode>
-          <target_attcode>name</target_attcode>
-        </field>
-        <field id="dbcluster_id" xsi:type="AttributeExternalKey" _delta="define">
-          <sql>dbcluster_id</sql>
-          <target_class>DBCluster</target_class>
+        <field id="dbserver_id" _delta="delete" />
+        <field id="dbserver_name" _delta="delete"/>
+        <field id="softwareinstance_id" xsi:type="AttributeExternalKey" _delta="define">
+          <sql>softwareinstance_id</sql>
+          <target_class>SoftwareInstance</target_class>
           <is_null_allowed>false</is_null_allowed>
           <on_target_delete>DEL_MANUAL</on_target_delete>
+          <filter><![CDATA[SELECT SoftwareInstance WHERE finalclass IN ('DBCluster','DBServer')]]></filter>
         </field>
-        <field id="dbcluster_name" xsi:type="AttributeExternalField" _delta="define">
-          <extkey_attcode>dbcluster_id</extkey_attcode>
+        <field id="softwareinstance_name" xsi:type="AttributeExternalField" _delta="define">
+          <extkey_attcode>softwareinstance_id</extkey_attcode>
           <target_attcode>name</target_attcode>
         </field>
         <field id="webapplications_list" xsi:type="AttributeLinkedSetIndirect" _delta="define">
@@ -108,9 +108,7 @@
 			
 			case 'depends on':
 			$aRels = array(
-				"DBServer" => array("sQuery"=>"SELECT DBServer WHERE id = :this->dbserver_id", "bPropagate"=>true, "iDistance"=>10),
-				"DBCluster" => array("sQuery"=>"SELECT DBCluster WHERE id = :this->dbcluster_id", "bPropagate"=>true, "iDistance"=>10),
-			
+				"SoftwareInstance" => array("sQuery"=>"SELECT SoftwareInstance AS SI WHERE SI.id = :this->softwareinstance_id", "bPropagate"=>true, "iDistance"=>5),
 			);
 			return array_merge($aRels, parent::GetRelationQueries($sRelCode));
 			break;
@@ -124,7 +122,10 @@
       <presentation>
         <details>
           <items>
-            <item id="dbcluster_id">
+            <item id="dbserver_id" _delta="delete">
+              <rank>30</rank>
+            </item>
+            <item id="softwareinstance_id" _delta="define">
               <rank>35</rank>
             </item>
             <item id="webapplications_list" _delta="define">
@@ -364,7 +365,7 @@
         <db_key_field>id</db_key_field>
         <db_final_class_field/>
         <naming>
-          <format>%1$s %2$s</format>
+          <format>%1$s</format>
           <attributes>
             <attribute id="name"/>
           </attributes>
@@ -380,21 +381,21 @@
         </reconciliation>
       </properties>
       <fields>
-        <field id="dbserver_list" xsi:type="AttributeLinkedSetIndirect">
-          <linked_class>lnkDBServerToDBCluster</linked_class>
+        <field id="dbnode_list" xsi:type="AttributeLinkedSetIndirect">
+          <linked_class>lnkDBClusterToSoftwareInstance</linked_class>
           <ext_key_to_me>dbcluster_id</ext_key_to_me>
           <count_min>0</count_min>
           <count_max>0</count_max>
-          <ext_key_to_remote>dbserver_id</ext_key_to_remote>
+          <ext_key_to_remote>softwareinstance_id</ext_key_to_remote>
           <duplicates/>
         </field>
         <field id="dbschema_list" xsi:type="AttributeLinkedSet">
           <linked_class>DatabaseSchema</linked_class>
-          <ext_key_to_me>dbcluster_id</ext_key_to_me>
+          <ext_key_to_me>softwareinstance_id</ext_key_to_me>
           <count_min>0</count_min>
           <count_max>0</count_max>
         </field>
-        <field id="volume_list" xsi:type="AttributeLinkedSetIndirect" _delta="define">
+        <field id="volume_list" xsi:type="AttributeLinkedSet" _delta="define">
           <linked_class>lnkDBClusterToVolume</linked_class>
           <ext_key_to_me>dbcluster_id</ext_key_to_me>
           <count_min>0</count_min>
@@ -414,15 +415,15 @@
         {
             case "impacts":
             $aRels = array(
-              "DatabaseSchema" => array("sQuery"=>"SELECT DatabaseSchema AS db WHERE dbcluster_id = :this->id", "bPropagate"=>true, "iDistance"=>10),
+                "DatabaseSchema" => array("sQuery"=>"SELECT DatabaseSchema AS db WHERE softwareinstance_id = :this->id", "bPropagate"=>true, "iDistance"=>5),
             );
             return array_merge($aRels, parent::GetRelationQueries($sRelCode));
             break;
             
             case 'depends on':
             $aRels = array(
-                 "DBServer" => array("sQuery"=>"SELECT DBServer AS db JOIN lnkDBServerToDBCluster AS l1 ON l1.dbserver_id=db.id WHERE l1.dbcluster_id = :this->id","bPropagate"=>true, "iDistance"=>10),
-                "LogicalVolume" => array("sQuery"=>"SELECT LogicalVolume AS volume JOIN lnkDBClusterToVolume AS l1 ON l1.volume_id=volume.id WHERE l1.dbcluster_id = :this->id", "bPropagate"=>true, "iDistance"=>10),
+                "SoftwareInstance" => array("sQuery"=>"SELECT SoftwareInstance AS s JOIN lnkDBClusterToSoftwareInstance AS l1 ON l1.softwareinstance_id=s.id WHERE l1.dbcluster_id = :this->id","bPropagate"=>true, "iDistance"=>10),
+                "LogicalVolume" => array("sQuery"=>"SELECT LogicalVolume AS volume JOIN lnkDBClusterToVolume AS l1 ON l1.volume_id=volume.id WHERE l1.dbcluster_id = :this->id", "bPropagate"=>true, "iDistance"=>5),
             );
             return array_merge($aRels, parent::GetRelationQueries($sRelCode));
             break;
@@ -475,7 +476,7 @@
             <item id="applicationsolution_list">
               <rank>140</rank>
             </item>
-            <item id="dbserver_list">
+            <item id="dbnode_list">
               <rank>145</rank>
             </item>
             <item id="dbschema_list">
@@ -520,6 +521,90 @@
         </list>
       </presentation>
     </class>
+    <class id="lnkDBClusterToSoftwareInstance" _delta="define">
+      <parent>cmdbAbstractObject</parent>
+      <properties>
+        <is_link>1</is_link>
+        <category>bizmodel</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>lnkdbclustertosoftwareinstance</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field/>
+        <naming>
+          <format>%1$s %2$s</format>
+          <attributes>
+            <attribute id="dbcluster_id"/>
+            <attribute id="softwareinstance_id"/>
+          </attributes>
+        </naming>
+        <display_template/>
+        <icon/>
+        <reconciliation>
+          <attributes>
+            <attribute id="dbcluster_id"/>
+            <attribute id="softwareinstance_id"/>
+          </attributes>
+        </reconciliation>
+      </properties>
+      <fields>
+        <field id="dbcluster_id" xsi:type="AttributeExternalKey">
+          <sql>dbcluster_id</sql>
+          <target_class>DBCluster</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+        </field>
+        <field id="dbcluster_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>dbcluster_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+        <field id="softwareinstance_id" xsi:type="AttributeExternalKey">
+          <sql>softwareinstance_id</sql>
+          <target_class>SoftwareInstance</target_class>
+          <is_null_allowed>false</is_null_allowed>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+          <filter><![CDATA[SELECT SoftwareInstance AS SI WHERE SI.finalclass IN ('DBCluster','DBServer')]]></filter>
+        </field>
+        <field id="softwareinstance_name" xsi:type="AttributeExternalField">
+          <extkey_attcode>softwareinstance_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
+      </fields>
+      <methods/>
+      <presentation>
+        <details>
+          <items>
+            <item id="dbcluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="softwareinstance_id">
+              <rank>20</rank>
+            </item>
+          </items>
+        </details>
+        <search>
+          <items>
+            <item id="dbcluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="softwareinstance_id">
+              <rank>20</rank>
+            </item>
+          </items>
+        </search>
+        <list>
+          <items>
+            <item id="dbcluster_id">
+              <rank>10</rank>
+            </item>
+            <item id="softwareinstance_id">
+              <rank>20</rank>
+            </item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+
     <class id="lnkDBServerToDBCluster" _delta="define">
       <parent>cmdbAbstractObject</parent>
       <properties>
