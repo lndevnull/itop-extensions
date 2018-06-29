@@ -67,6 +67,11 @@
       </presentation>
     </class>
     <class id="DatabaseSchema" _delta="must_exist">
+      <properties>
+        <obsolescence>
+          <condition _delta="redefine">softwareinstance_id_obsolescence_flag</condition>
+        </obsolescence>
+      </properties>
       <fields>
         <field id="dbserver_id" _delta="delete" />
         <field id="dbserver_name" _delta="delete"/>
